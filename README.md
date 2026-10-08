@@ -44,3 +44,49 @@ Once the model is trained and evaluated, we deploy it into production to predict
 
 Predicting customer churn for a telecommunications company is a challenging but essential task. By leveraging machine learning techniques, businesses can anticipate customer behavior, implement targeted retention strategies, and improve overall customer satisfaction. This project demonstrates the end-to-end process of building and deploying a churn prediction model, providing valuable insights for telecom companies looking to reduce churn and increase customer retention.
 
+
+---
+
+## Results
+
+Measured on the real [IBM Telco Customer Churn](https://github.com/IBM/telco-customer-churn-on-icp4d)
+dataset: 7,043 rows, of which 11 are dropped for a blank `TotalCharges` — those
+are customers at tenure 0 who have not been billed yet, and coercing the blank
+to 0 would invent a charge that never happened. 7,032 rows remain, 26.6% churn.
+Logistic regression, stratified 80/20 split, metrics on the held-out 20%.
+
+### ROC AUC 0.8401
+
+| Threshold | Accuracy | Precision | Recall | F1 | Churners caught |
+|---|---|---|---|---|---|
+| 0.50 — default | 0.8017 | 0.6426 | 0.5722 | 0.6054 | 214 of 374 |
+| 0.30 — tuned for F1 | 0.7647 | 0.5397 | 0.7807 | 0.6383 | 292 of 374 |
+
+**The threshold matters more than the model.** Dropping it from 0.50 to 0.30
+trades precision for recall and catches 78 more churners out of 374. For a
+retention campaign that is the better trade: a false positive costs one
+unnecessary discount, a false negative costs the customer.
+
+Strongest coefficients, on standardised features:
+
+| Feature | Coefficient |
+|---|---|
+| `tenure` | -1.239 |
+| `Contract = Two year` | -0.618 |
+| `TotalCharges` | +0.516 |
+| `InternetService = Fiber optic` | +0.362 |
+
+Tenure dominates, and it is negative — the longer someone has been a customer,
+the less likely they are to leave. A two-year contract pulls the same way.
+
+### Note on an earlier version
+
+An earlier version of this notebook defined five customers inline, split them
+70/30, and reported metrics on the resulting **two test rows**:
+`Accuracy 0.5, Precision 0.0, Recall 0.0, F1 0.0, ROC AUC 0.5`, with
+`UndefinedMetricWarning: no predicted samples`. Those were not results — the
+model had learned to predict a single class from three training rows. The
+notebook now loads the dataset it always claimed to use.
+
+Implemented in numpy only, no pandas and no scikit-learn, so it runs anywhere
+numpy does.
